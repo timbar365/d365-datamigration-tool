@@ -46,15 +46,8 @@ Exports are driven by an XML file matching the `entities` schema in `Source/Type
 ```xml
 <entities>
   <entity logicalname="account" exportowner="true" exportcreatedon="false" disableplugins="false" deactivateAllRecords="false" ensureWithAllFields="false" ensureWithFields="accountnumber, telephone1" fieldsToIgnore="importsequencenumber">
-    <fields>
-      <field name="name" displayname="Account Name" primaryKey="true" />
-      <field name="accountnumber" />
-      <field name="ownerid" lookupType="systemuser" />
-    </fields>
     <fetchfilter>
-      <filter type="and">
-        <condition attribute="statecode" operator="eq" value="0" />
-      </filter>
+      <... fetchxml ...>
     </fetchfilter>
   </entity>
 </entities>
@@ -73,14 +66,7 @@ Exports are driven by an XML file matching the `entities` schema in `Source/Type
 - `alternateKeyField`: Attribute to use as an alternate key when mapping records.
 
 ### `<entity>` children
-- `<fields>`: Optional list of `<field>` elements to control export metadata.
-  - `name`: Logical attribute name.
-  - `displayname`: Friendly name used only for documentation.
-  - `type`: Attribute type.
-  - `customfield`: Mark attribute as custom.
-  - `primaryKey`: Flag that the attribute is part of the primary key.
-  - `lookupType`: Logical name for lookup targets.
-- `<fetchfilter>`: Optional FetchXML filter applied during export. The inner XML should contain FetchXML `<filter>` or `<entity>` elements; the tool injects this into the query used for paging exports.
+- `<fetchfilter>`: FetchXML filter applied during export. The inner XML should contain FetchXML element; the tool injects this into the query used for paging exports.
 
 ## Export output (`.json`)
 Running `export` produces a JSON file representing an `ImportJobDefinition` (see `Source/Types/ImportDefinitions.cs`). Each exported entity becomes an `ImportEntityDefinition` with:
