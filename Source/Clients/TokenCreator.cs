@@ -49,6 +49,10 @@ namespace D365.Framework.Tools.DataMigration.Clients
             {
                 return this.AuthHelper.AuthenticateInteractive().Result;
             }
+            else if (o.AuthType == Constants.AUTH_GITHUB_OIDC)
+            {
+                return this.AuthHelper.AuthenticateGitHubOidc(o.TenantId, o.ClientId).Result;
+            }
             else
                 throw new NotImplementedException();
         }

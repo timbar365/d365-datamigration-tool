@@ -3,7 +3,7 @@
 This repository contains a console utility for exporting data from and importing data into Dynamics 365 using the Web API. It supports exporting entity data to a JSON payload based on an XML configuration and re-importing that payload with optional field and owner mappings.
 
 ## Prerequisites
-- .NET 8 SDK for building and running the tool.
+- .NET 10 SDK for building and running the tool.
 - A Dynamics 365 environment with either user credentials or an app registration for OAuth/client credential authentication.
 
 ## Building the tool
@@ -12,20 +12,21 @@ From the repository root:
 dotnet restore
 dotnet build Tools.DataMigration.sln -c Release
 ```
-The compiled console app is placed under `Source/bin/Release/net8.0/`. Run commands from that folder so the bundled `log4net.config` file can be discovered.
+The compiled console app is placed under `Source/bin/Release/net10.0/`. Run commands from that folder so the bundled `log4net.config` file can be discovered.
 
 ## Command-line parameters
 Run the tool from the `Source` output folder. Required parameters are marked accordingly. Authentication depends on the chosen `--authtype`:
 - `Office365` (default): supply `--user` and `--password`.
 - `ClientId`: supply `--tenantid`, `--clientid`, and `--clientsecret` for client credentials.
 - `OAuth`: launches interactive browser authentication; provide `--clientid` and optionally `--tenantid` for the authority.
+- `GitHubOidc`: passwordless authentication inside GitHub Actions via workload identity federation; supply `--tenantid` and `--clientid` only (no secret). See [GitHub Actions with OIDC](#github-actions-with-oidc).
 
 | Parameter | Alias | Required | Description |
 | --- | --- | --- | --- |
 | `--url` | – | Yes | Dynamics 365 environment URL. |
 | `--mode` | `-m` | Yes | `export` or `import` to control the operation. |
 | `--file` | `-f` | Yes | Path to the data file to read (`import`) or write (`export`). |
-| `--authtype` | `-a` | No | Authentication type (`Office365`, `ClientId`, or `OAuth`). Defaults to `Office365`. |
+| `--authtype` | `-a` | No | Authentication type (`Office365`, `ClientId`, `OAuth`, or `GitHubOidc`). Defaults to `Office365`. |
 | `--user` | `-u` | No | Username for user/password auth. |
 | `--password` | `-p` | No | Password for user/password auth. |
 | `--tenantid` | `-t` | No | Tenant ID for application auth. |
@@ -38,6 +39,10 @@ Run the tool from the `Source` output folder. Required parameters are marked acc
 | `--returnError` | – | No | Return exit code `-1` if any import errors occur. Defaults to `false`. |
 | `--timeout` | – | No | Web request timeout in milliseconds. Defaults to `100000`. |
 | `--parallelLimit` | – | No | Parallel import thread limit. Defaults to `5`. |
+
+## GitHub Actions with OIDC
+1. In Entra ID, add a **federated credential** (scenario *GitHub Actions deploying Azure resources*) to the app registration and set organization, repository and entity (branch/environment/etc.). The app registration must also be an application user in the Dynamics environment.
+2. Give the workflow job `permissions: id-token: write` and run the tool with `--authtype GitHubOidc`. See `.github/workflows/migrate.yml` for an example. Tenant and client ID are not secrets, but can be stored as repository variables.
 
 ## Export configuration schema (`.xml`)
 Exports are driven by an XML file matching the `entities` schema in `Source/Types/ConfigurationSchema.cs`. The root contains one or more `<entity>` entries.

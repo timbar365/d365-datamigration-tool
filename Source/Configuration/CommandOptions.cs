@@ -5,7 +5,7 @@ namespace D365.Framework.Tools.DataMigration.Configuration
 {
     public class CommandOptions
     {
-        [Option('a', "authtype", Required = false, HelpText = "e.g. Office365, ClientId", Default = Constants.AUTH_OFFICE365)]
+        [Option('a', "authtype", Required = false, HelpText = "e.g. Office365, ClientId, OAuth, GitHubOidc", Default = Constants.AUTH_OFFICE365)]
 		public string AuthType
 		{
 			get;
