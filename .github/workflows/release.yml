@@ -1,4 +1,4 @@
-name: Release NuGet package
+name: Release package
 
 on:
   release:
@@ -9,11 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     # Extra guard: only releases created by the repository owner are published.
     if: github.actor == github.repository_owner
-    # Environment "nuget" must be configured with you as required reviewer.
-    environment: nuget
+    # Environment "release" should be configured with you as required reviewer.
+    environment: release
     permissions:
       contents: write # attach the .nupkg to the GitHub release
-      id-token: write # NuGet trusted publishing (OIDC), no API key needed
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -33,12 +32,3 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "${{ github.event.release.tag_name }}" out/*.nupkg --clobber
-
-      - name: NuGet login (trusted publishing)
-        id: login
-        uses: NuGet/login@v1
-        with:
-          user: ${{ vars.NUGET_USER }} # nuget.org profile name
-
-      - name: Push to nuget.org
-        run: dotnet nuget push out/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate

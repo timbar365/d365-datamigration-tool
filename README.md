@@ -44,6 +44,13 @@ Run the tool from the `Source` output folder. Required parameters are marked acc
 1. In Entra ID, add a **federated credential** (scenario *GitHub Actions deploying Azure resources*) to the app registration and set organization, repository and entity (branch/environment/etc.). The app registration must also be an application user in the Dynamics environment.
 2. Give the workflow job `permissions: id-token: write` and run the tool with `--authtype GitHubOidc`. See `.github/workflows/migrate.yml` for an example. Tenant and client ID are not secrets, but can be stored as repository variables.
 
+## Installation from a release
+Each GitHub release contains the NuGet package (`.nupkg`) of the tool:
+```bash
+gh release download <tag> -p "*.nupkg" -R timbar365/d365-datamigration-tool
+dotnet tool install -g D365.Framework.Tools.DataMigration --add-source .
+```
+
 ## Export configuration schema (`.xml`)
 Exports are driven by an XML file matching the `entities` schema in `Source/Types/ConfigurationSchema.cs`. The root contains one or more `<entity>` entries.
 
