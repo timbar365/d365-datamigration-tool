@@ -21,12 +21,15 @@ Run the tool from the `Source` output folder. Required parameters are marked acc
 - `OAuth`: launches interactive browser authentication; provide `--clientid` and optionally `--tenantid` for the authority.
 - `GitHubOidc`: passwordless authentication inside GitHub Actions via workload identity federation; supply `--tenantid` and `--clientid` only (no secret). See [GitHub Actions with OIDC](#github-actions-with-oidc).
 
+- `AzureDevOpsWif`: passwordless authentication inside Azure Pipelines via workload identity federation; supply `--tenantid`, `--clientid` and `--serviceconnectionid`. See [Azure DevOps with workload identity federation](#azure-devops-with-workload-identity-federation).
+
 | Parameter | Alias | Required | Description |
 | --- | --- | --- | --- |
 | `--url` | – | Yes | Dynamics 365 environment URL. |
 | `--mode` | `-m` | Yes | `export` or `import` to control the operation. |
 | `--file` | `-f` | Yes | Path to the data file to read (`import`) or write (`export`). |
-| `--authtype` | `-a` | No | Authentication type (`Office365`, `ClientId`, `OAuth`, or `GitHubOidc`). Defaults to `Office365`. |
+| `--authtype` | `-a` | No | Authentication type (`Office365`, `ClientId`, `OAuth`, `GitHubOidc`, or `AzureDevOpsWif`). Defaults to `Office365`. |
+| `--serviceconnectionid` | – | No | Azure DevOps service connection ID for `AzureDevOpsWif` (falls back to env `AZURESUBSCRIPTION_SERVICE_CONNECTION_ID`). |
 | `--user` | `-u` | No | Username for user/password auth. |
 | `--password` | `-p` | No | Password for user/password auth. |
 | `--tenantid` | `-t` | No | Tenant ID for application auth. |
@@ -43,6 +46,26 @@ Run the tool from the `Source` output folder. Required parameters are marked acc
 ## GitHub Actions with OIDC
 1. In Entra ID, add a **federated credential** (scenario *GitHub Actions deploying Azure resources*) to the app registration and set organization, repository and entity (branch/environment/etc.). The app registration must also be an application user in the Dynamics environment.
 2. Give the workflow job `permissions: id-token: write` and run the tool with `--authtype GitHubOidc`. See `.github/workflows/migrate.yml` for an example. Tenant and client ID are not secrets, but can be stored as repository variables.
+
+## Azure DevOps with workload identity federation
+1. Create an **Azure Resource Manager** service connection using *Workload identity federation* (app registration automatic or manual). Add the app registration as an application user in the Dynamics environment.
+2. Run the tool in a pipeline step with `--authtype AzureDevOpsWif`, passing the service connection's ID and mapping the system token (required to request the OIDC token):
+```yaml
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: my-service-connection
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      dotnet D365.Framework.Tools.DataMigration.dll \
+        --authtype AzureDevOpsWif \
+        --tenantid "$(AZURE_TENANT_ID)" --clientid "$(AZURE_CLIENT_ID)" \
+        --serviceconnectionid "$AZURESUBSCRIPTION_SERVICE_CONNECTION_ID" \
+        --url "$(D365_URL)" --mode export --file data.json --expconf exportconfig.xml
+  env:
+    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+```
+Outside `AzureCLI@2` (e.g. a plain `script` step) pass the service connection ID explicitly and still set `SYSTEM_ACCESSTOKEN`.
 
 ## Installation from a release
 Each GitHub release contains the NuGet package (`.nupkg`) of the tool:

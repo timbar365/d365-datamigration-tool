@@ -75,6 +75,59 @@ namespace D365.Framework.Tools.DataMigration.Clients
             }
         }
 
+        /// <summary>
+        /// Authenticates using the OIDC token of an Azure DevOps pipeline run (workload identity federation).
+        /// Requires an Azure Resource Manager service connection using workload identity federation, and
+        /// SYSTEM_ACCESSTOKEN mapped into the step's environment.
+        /// </summary>
+        public async Task<string> AuthenticateAzureDevOpsWif(string tenantId, string clientId, string serviceConnectionId)
+        {
+            if (string.IsNullOrEmpty(tenantId) || string.IsNullOrEmpty(clientId))
+            {
+                throw new ArgumentException("AzureDevOpsWif authentication requires --tenantid and --clientid (of the service connection's app registration).");
+            }
+
+            string assertion = await this.GetAzureDevOpsIdToken(serviceConnectionId);
+            return await this.Authenticate(
+                () => $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token",
+                () => $"scope={Uri.EscapeDataString(this.Resource + ".default")}&client_id={Uri.EscapeDataString(clientId)}&grant_type=client_credentials" +
+                      $"&client_assertion_type={Uri.EscapeDataString("urn:ietf:params:oauth:client-assertion-type:jwt-bearer")}&client_assertion={Uri.EscapeDataString(assertion)}");
+        }
+
+        private async Task<string> GetAzureDevOpsIdToken(string serviceConnectionId)
+        {
+            string requestUri = Environment.GetEnvironmentVariable("SYSTEM_OIDCREQUESTURI");
+            string accessToken = Environment.GetEnvironmentVariable("SYSTEM_ACCESSTOKEN");
+            if (string.IsNullOrEmpty(serviceConnectionId))
+            {
+                serviceConnectionId = Environment.GetEnvironmentVariable("AZURESUBSCRIPTION_SERVICE_CONNECTION_ID");
+            }
+            if (string.IsNullOrEmpty(requestUri) || string.IsNullOrEmpty(accessToken))
+            {
+                throw new InvalidOperationException("Azure DevOps OIDC is not available. Run inside an Azure Pipeline and map SYSTEM_ACCESSTOKEN: $(System.AccessToken) into the step's env.");
+            }
+            if (string.IsNullOrEmpty(serviceConnectionId))
+            {
+                throw new ArgumentException("AzureDevOpsWif authentication requires --serviceconnectionid (or env AZURESUBSCRIPTION_SERVICE_CONNECTION_ID).");
+            }
+
+            using (var client = new HttpClient())
+            {
+                var separator = requestUri.Contains("?") ? "&" : "?";
+                var request = new HttpRequestMessage(HttpMethod.Post,
+                    $"{requestUri}{separator}api-version=7.1&serviceConnectionId={Uri.EscapeDataString(serviceConnectionId)}");
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                request.Content = new StringContent(string.Empty, Encoding.UTF8, "application/json");
+                var response = await client.SendAsync(request);
+                var content = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Could not get Azure DevOps OIDC token ({(int)response.StatusCode}): {content}");
+                }
+                return JObject.Parse(content)["oidcToken"].Value<string>();
+            }
+        }
+
         public async Task<string> AuthenticateUser(string username, string password, string clientId = DEFAULT_CLIENTID)
         {
             return await this.Authenticate(
