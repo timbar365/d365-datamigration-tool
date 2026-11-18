@@ -53,6 +53,10 @@ namespace D365.Framework.Tools.DataMigration.Clients
             {
                 return this.AuthHelper.AuthenticateGitHubOidc(o.TenantId, o.ClientId).Result;
             }
+            else if (o.AuthType == Constants.AUTH_AZDO_WIF)
+            {
+                return this.AuthHelper.AuthenticateAzureDevOpsWif(o.TenantId, o.ClientId, o.ServiceConnectionId).Result;
+            }
             else
                 throw new NotImplementedException();
         }

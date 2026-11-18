@@ -5,7 +5,7 @@ namespace D365.Framework.Tools.DataMigration.Configuration
 {
     public class CommandOptions
     {
-        [Option('a', "authtype", Required = false, HelpText = "e.g. Office365, ClientId, OAuth, GitHubOidc", Default = Constants.AUTH_OFFICE365)]
+        [Option('a', "authtype", Required = false, HelpText = "e.g. Office365, ClientId, OAuth, GitHubOidc, AzureDevOpsWif", Default = Constants.AUTH_OFFICE365)]
 		public string AuthType
 		{
 			get;
@@ -49,6 +49,13 @@ namespace D365.Framework.Tools.DataMigration.Configuration
 
 		[Option('s', "clientsecret", Required = false, HelpText = "ClientSecret")]
 		public string ClientSecret
+		{
+			get;
+			set;
+		}
+
+		[Option("serviceconnectionid", Required = false, HelpText = "Azure DevOps service connection ID (AzureDevOpsWif); falls back to env AZURESUBSCRIPTION_SERVICE_CONNECTION_ID")]
+		public string ServiceConnectionId
 		{
 			get;
 			set;
